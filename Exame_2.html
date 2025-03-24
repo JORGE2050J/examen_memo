@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 20px;
+            background-color: white;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .quiz-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: normal;
+            max-width: 80%;
+            margin: 0 auto;
+        }
+
+        .progress-container {
+            margin: 20px auto;
+            height: 16px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #2c7cff;
+            transition: width 0.3s ease;
+        }
+
+        .quiz-content {
+            padding: 20px;
+        }
+
+        .quiz-question {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .question-hint {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-container input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .input-container button {
+            padding: 10px 20px;
+            background-color: #2c7cff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .input-container button:hover {
+            background-color: #1565c0;
+        }
+
+        .result-message {
+            margin-top: 10px;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .result-message.correct {
+            background-color: #e6ffe6;
+            color: #00c853;
+        }
+
+        .result-message.incorrect {
+            background-color: #ffebee;
+            color: #f44336;
+        }
+
+        .results-container {
+            padding: 20px;
+        }
+
+        .results-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .results-score {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .results-message {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #777;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .result-item.correct {
+            background-color: #e8f5e9;
+        }
+
+        .result-item.incorrect {
+            background-color: #ffebee;
+        }
+
+        .result-item .status {
+            display: inline-block;
+            margin-right: 10px;
+            color: #00c853;
+        }
+
+        .result-item.incorrect .status {
+            color: #f44336;
+        }
+
+        .play-again-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 12px 24px;
+            background-color: #2c7cff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .play-again-btn:hover {
+            background-color: #1565c0;
+        }
+
+        .highlighted {
+            background-color: rgba(44, 124, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="back-button">←</div>
+            <h1 class="quiz-title" id="quiz-title">1. Cargando pregunta...</h1>
+        </header>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div class="quiz-content" id="quiz-content">
+            <!-- Aquí se mostrará la pregunta actual -->
+        </div>
+
+        <div class="results-container" id="results-container" style="display: none;">
+            <!-- Aquí se mostrarán los resultados -->
+        </div>
+    </div>
+
+    <script>
+        // Configuración del quiz
+        const quizConfig = {
+            title: "Examen de memo",
+            questions: [
+                {
+                    question: "¿Qué comando SQL se utiliza para cambiar el parámetro `JOB_QUEUE_PROCESSES` a 15?",
+                    correctAnswer: "ALTER SYSTEM SET JOB_QUEUE_PROCESSES = 15;",
+                    expPoints: 20
+                },
+                {
+                    question: "Describe los pasos para apagar la base de datos utilizando Oracle Enterprise Manager.",
+                    correctAnswer: "Haz clic en 'Database', luego en 'Shutdown', ingresa credenciales y confirma en modo 'Immediate'.",
+                    expPoints: 30
+                },
+                {
+                    question: "¿Qué ocurre si intentas conectarte como usuario HR a una base de datos que ha sido apagada?",
+                    correctAnswer: "Obtendrás un error que indica que la base de datos no está disponible.",
+                    expPoints: 25
+                },
+                {
+                    question: "¿Cuáles son las fases por las que pasa la base de datos durante el arranque (startup)?",
+                    correctAnswer: "NOMOUNT, MOUNT, OPEN",
+                    expPoints: 35
+                },
+                {
+                    question: "¿Cómo puedes ver el archivo de alerta (alert log) en formato de texto sin las etiquetas XML?",
+                    correctAnswer: "SELECT VALUE FROM V$DIAG_INFO WHERE NAME = 'Diag Trace';",
+                    expPoints: 30
+                },
+                {
+                    question: "¿Qué comando SQL utilizas para ver el valor del parámetro `SGA_MAX_SIZE`?",
+                    correctAnswer: "SHOW PARAMETER SGA_MAX_SIZE;",
+                    expPoints: 25
+                },
+                {
+                    question: "¿Qué valor tiene `DB_CACHE_SIZE` y `SHARED_POOL_SIZE` en tu base de datos?",
+                    correctAnswer: "SHOW PARAMETER DB_CACHE_SIZE; SHOW PARAMETER SHARED_POOL_SIZE;",
+                    expPoints: 30
+                },
+                {
+                    question: "¿Qué ocurre si cambias el parámetro `JOB_QUEUE_PROCESSES` en una instancia en ejecución pero no lo guardas en el SPFILE?",
+                    correctAnswer: "El cambio solo afectará a la instancia actual.",
+                    expPoints: 25
+                },
+                {
+                    question: "¿Cómo puedes verificar si el proceso LGWR se ha reiniciado después de matarlo?",
+                    correctAnswer: "ps -ef | grep ora_lgwr_<nombre_instancia>",
+                    expPoints: 30
+                },
+                {
+                    question: "¿Qué comando utilizas para matar el proceso LGWR y qué observas después de hacerlo?",
+                    correctAnswer: "kill -9 <PID_del_LGWR>; Oracle Restart reiniciará automáticamente el proceso LGWR.",
+                    expPoints: 35
+                },
+                {
+                    question: "Vista de diccionario de datos que muestra las tablas propiedad del usuario y las tablas que han otorgado privilegios para ver todo los nombres de la base de datos.",
+                    correctAnswer: "ALL_TABLES",
+                    expPoints: 20
+                },
+                {
+                    question: "Nombre del Shell que sirve para cambiar las variables de entorno.",
+                    correctAnswer: "oraenv",
+                    expPoints: 15
+                },
+                {
+                    question: "Modifique el parámetro `processes` a 150 de manera permanente.",
+                    correctAnswer: "ALTER SYSTEM SET PROCESSES = 150 SCOPE = SPFILE;",
+                    expPoints: 25
+                },
+                {
+                    question: "Vista que muestra todas las vistas de diccionario de datos.",
+                    correctAnswer: "DICTIONARY",
+                    expPoints: 20
+                },
+                {
+                    question: "Vista que muestra todas las vistas dinámicas en la base de datos.",
+                    correctAnswer: "V$FIXED_TABLE",
+                    expPoints: 20
+                },
+                {
+                    question: "¿En qué modo de apertura se abre el archivo de control?",
+                    correctAnswer: "MOUNT",
+                    expPoints: 20
+                },
+                {
+                    question: "¿Qué archivo se abre en modo `nomount`?",
+                    correctAnswer: "PFILE o SPFILE",
+                    expPoints: 20
+                },
+                {
+                    question: "¿Qué contiene el archivo de ALERT?",
+                    correctAnswer: "Mensajes de error, advertencias y eventos importantes relacionados con la base de datos.",
+                    expPoints: 20
+                },
+                {
+                    question: "Comando SQL*Plus que baja la instancia de manera inmediata.",
+                    correctAnswer: "SHUTDOWN IMMEDIATE;",
+                    expPoints: 20
+                },
+                {
+                    question: "Baje la instancia ORCL con el server control de manera inmediata.",
+                    correctAnswer: "srvctl stop database -d ORCL",
+                    expPoints: 20
+                },
+                {
+                    question: "Comando SQL*Plus que sube la instancia en modo `nomount`.",
+                    correctAnswer: "STARTUP NOMOUNT;",
+                    expPoints: 20
+                },
+                {
+                    question: "Vista dinámica que muestra información de los usuarios conectados a la base de datos.",
+                    correctAnswer: "V$SESSION",
+                    expPoints: 20
+                },
+                {
+                    question: "Parámetro del `shutdown` que permite que sigan conectándose usuarios a la base de datos.",
+                    correctAnswer: "NORMAL",
+                    expPoints: 20
+                },
+                {
+                    question: "Nombre del script que genera un reporte de AWR para ver el estado de salud de la base de datos.",
+                    correctAnswer: "awrrpt.sql",
+                    expPoints: 20
+                },
+                {
+                    question: "¿En qué modo de apertura de la base de datos se crea la instancia?",
+                    correctAnswer: "NOMOUNT",
+                    expPoints: 20
+                },
+                {
+                    question: "Levante la instancia de ORCL con el server control en modo `nomount`.",
+                    correctAnswer: "srvctl start database -d ORCL -o nomount",
+                    expPoints: 20
+                },
+                {
+                    question: "Prefijo de vista de diccionario de datos que muestra todos los objetos creados en la base de datos.",
+                    correctAnswer: "DBA_",
+                    expPoints: 20
+                },
+                {
+                    question: "Vista de diccionario de datos que muestra información de las secuencias propiedad del usuario.",
+                    correctAnswer: "USER_SEQUENCES",
+                    expPoints: 20
+                },
+                {
+                    question: "Vista dinámica que muestra información de los valores de los parámetros.",
+                    correctAnswer: "V$PARAMETER",
+                    expPoints: 20
+                },
+                {
+                    question: "Comando para subir los servicios del Oracle Enterprise Manager.",
+                    correctAnswer: "emctl start dbconsole",
+                    expPoints: 20
+                }
+            ]
+        };
+
+        // Estado del quiz
+        let currentState = {
+            currentQuestion: 0,
+            userAnswers: [],
+            score: 0,
+            totalExp: 0
+        };
+
+        // Elementos DOM
+        const quizTitle = document.getElementById('quiz-title');
+        const progressBar = document.getElementById('progress-bar');
+        const quizContent = document.getElementById('quiz-content');
+        const resultsContainer = document.getElementById('results-container');
+
+        // Inicializar quiz
+        function initQuiz() {
+            updateQuizTitle();
+            updateProgressBar();
+            renderCurrentQuestion();
+        }
+
+        // Actualizar el título del quiz
+        function updateQuizTitle() {
+            quizTitle.textContent = `${currentState.currentQuestion + 1}. ${quizConfig.title}`;
+        }
+
+        // Actualizar la barra de progreso
+        function updateProgressBar() {
+            const progress = ((currentState.currentQuestion + 1) / quizConfig.questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Renderizar la pregunta actual
+        function renderCurrentQuestion() {
+            const question = quizConfig.questions[currentState.currentQuestion];
+
+            // Crear elemento para la pregunta
+            let questionHtml = `
+                <div class="quiz-question">
+                    <div class="question-text">${question.question}</div>
+                    <div class="input-container">
+                        <input type="text" id="answer-input" placeholder="Escribe tu respuesta aquí">
+                        <button onclick="checkAnswer()">Enviar</button>
+                    </div>
+                    <div id="result-message" class="result-message"></div>
+                </div>
+            `;
+
+            quizContent.innerHTML = questionHtml;
+
+            // Permitir enviar la respuesta con la tecla Enter
+            document.getElementById('answer-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+        }
+
+        // Verificar la respuesta
+        function checkAnswer() {
+            const question = quizConfig.questions[currentState.currentQuestion];
+            const userAnswer = document.getElementById('answer-input').value.trim();
+            const resultMessage = document.getElementById('result-message');
+
+            // Comprobar si la respuesta es correcta
+            const isCorrect = userAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
+
+            // Mostrar mensaje de resultado
+            if (isCorrect) {
+                resultMessage.textContent = "¡Correcto!";
+                resultMessage.className = "result-message correct";
+                currentState.score += 1;
+                currentState.totalExp += question.expPoints;
+            } else {
+                resultMessage.textContent = `Incorrecto. La respuesta correcta es: ${question.correctAnswer}`;
+                resultMessage.className = "result-message incorrect";
+            }
+
+            // Guardar respuesta
+            currentState.userAnswers.push({
+                questionIndex: currentState.currentQuestion,
+                userAnswer: userAnswer,
+                isCorrect: isCorrect
+            });
+
+            // Avanzar a la siguiente pregunta después de un breve retraso
+            setTimeout(() => {
+                currentState.currentQuestion += 1;
+
+                // Si hay más preguntas, mostrar la siguiente
+                if (currentState.currentQuestion < quizConfig.questions.length) {
+                    updateQuizTitle();
+                    updateProgressBar();
+                    renderCurrentQuestion();
+                } else {
+                    // Si no hay más preguntas, mostrar resultados
+                    showResults();
+                }
+            }, 1500);
+        }
+
+        // Mostrar resultados finales
+        function showResults() {
+            quizContent.style.display = 'none';
+            resultsContainer.style.display = 'block';
+
+            const totalQuestions = quizConfig.questions.length;
+            const score = currentState.score;
+
+            let resultsHtml = `
+                <h2 class="results-title">Resultados</h2>
+                <p class="results-score">Puntuación: ${score} de ${totalQuestions}</p>
+            `;
+
+            // Mensaje basado en la puntuación
+            if (score / totalQuestions < 0.6) {
+                resultsHtml += `<p class="results-message">Necesitas repasar más el tema.</p>`;
+            } else if (score / totalQuestions < 0.8) {
+                resultsHtml += `<p class="results-message">Buen trabajo, pero hay margen de mejora.</p>`;
+            } else {
+                resultsHtml += `<p class="results-message">¡Excelente trabajo!</p>`;
+            }
+
+            // Mostrar cada pregunta con su respuesta
+            currentState.userAnswers.forEach((answer, index) => {
+                const question = quizConfig.questions[answer.questionIndex];
+                const userAnswer = answer.userAnswer;
+                const correctAnswer = question.correctAnswer;
+
+                resultsHtml += `
+                    <div class="result-item ${answer.isCorrect ? 'correct' : 'incorrect'}">
+                        <div class="result-question">
+                            ${answer.isCorrect ?
+                                '<span class="status">✓ Correcto</span>' :
+                                '<span class="status">✗ Incorrecto. Respuesta correcta: ' + correctAnswer + '</span>'}
+                            ${question.question}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Botón para jugar de nuevo
+            resultsHtml += `
+                <button class="play-again-btn" onclick="resetQuiz()">Jugar de nuevo</button>
+            `;
+
+            resultsContainer.innerHTML = resultsHtml;
+        }
+
+// Reiniciar quiz
+function resetQuiz() {
+    currentState = {
+        currentQuestion: 0,
+        userAnswers: [],
+        score: 0,
+        totalExp: 0
+    };
+    
+    resultsContainer.style.display = 'none';
+    quizContent.style.display = 'block';
+    
+    initQuiz();
+}
+
+// Iniciar el quiz
+initQuiz();
+</script>
+</body>
+</html>
